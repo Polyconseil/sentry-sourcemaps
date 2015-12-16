@@ -1,6 +1,6 @@
 {
   "name": "sentry-sourcemaps",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Upload your Javascript source maps to Sentry",
   "main": "dist/index",
   "repository": {
@@ -35,6 +35,8 @@
     "README.md"
   ],
   "dependencies": {
+    "asyncawait": "^1.0.1",
+    "bluebird": "^3.0.6",
     "npm-registry-client": "^7.0.9",
     "temp": "^0.8.3",
     "yargs": "^3.31.0"
