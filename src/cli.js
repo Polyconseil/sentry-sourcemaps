@@ -10,6 +10,7 @@ const PROGRAM_NAME = 'sentry-sourcemaps';
 //-- Module requires
 const async = require('asyncawait/async');
 const await = require('asyncawait/await');
+
 const fs = require('fs');
 const npm = require('npm');
 const npmlog = require('npmlog');
@@ -17,6 +18,7 @@ const temp = require('temp');
 const Promise = require('bluebird');
 const RegistryClient = require('npm-registry-client');
 const util = require('util');
+const targz = require('tar.gz');
 const yargs = require('yargs');
 
 
@@ -38,8 +40,14 @@ class AsyncSilentNpmClient extends RegistryClient {
 
 
 //-- Helper functions
-const streamToTempFile = async (function(buffer, prefix) {
-  const temporaryFile = await (temp.openAsync(prefix));
+function fnAwait(fn) {  // accepts other arguments
+  const args = Array.prototype.slice.call(arguments, 1);
+  const asyncFn = Promise.promisify(fn);
+  return await (asyncFn.apply(this, args));
+}
+
+const streamToTempFile = async (function(buffer) {
+  const temporaryFile = fnAwait(temp.open, PROGRAM_NAME);
   fs.close(temporaryFile.fd);
   const wstream = fs.createWriteStream(temporaryFile.path);
   wstream.write(buffer);
@@ -48,14 +56,11 @@ const streamToTempFile = async (function(buffer, prefix) {
 });
 
 const downloadPackage = async (function(pkgName, pkgVersion, registryUrl) {
-  Promise.promisifyAll(npm);
-  Promise.promisifyAll(temp);
+  fnAwait(npm.load, {loaded: false, loglevel: 'silent'});
 
-  await (npm.loadAsync({loaded: false, loglevel: 'silent'}));
-  const npmShowAsync = Promise.promisify(npm.commands.show);
   registryUrl = registryUrl || npm.config.get('registry');
 
-  const pkgData = await (npmShowAsync([`${pkgName}@${pkgVersion}`], {loglevel: 'silent'}));
+  const pkgData = fnAwait(npm.commands.show, [`${pkgName}@${pkgVersion}`], {loglevel: 'silent'});
   const tarballUrl = pkgData[pkgVersion].dist.tarball;
 
   const client = new AsyncSilentNpmClient(npm.config);
@@ -65,6 +70,7 @@ const downloadPackage = async (function(pkgName, pkgVersion, registryUrl) {
 
 
 //-- Main execution
+
 if (!yargs.argv._ || yargs.argv._.length !== 2) {
   console.log(`Usage:\n\t${PROGRAM_NAME} [--registry REGISTRY] <PACKAGE> <VERSION>`);
   process.exit(1);
@@ -76,5 +82,14 @@ const registryUrl = yargs.argv.registry || null;
 
 async (function() {
   const filePath = await (downloadPackage(pkgName, pkgVersion, registryUrl));
-  console.log(`Downloaded as: '${filePath}'`);
+
+  // Extract everything from the package
+  const dirPath = fnAwait(temp.mkdir, PROGRAM_NAME);
+  await (targz().extract(filePath, dirPath));
+  console.log(dirPath);
+
+  //
+  // List source maps
+  //
+  // For every file referred to in the source map, publish it to Sentry
 })();
