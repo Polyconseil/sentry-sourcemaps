@@ -12,8 +12,10 @@ const async = require('asyncawait/async');
 const await = require('asyncawait/await');
 
 const fs = require('fs');
+const glob = require('glob');
 const npm = require('npm');
 const npmlog = require('npmlog');
+const request = require('request');
 const temp = require('temp');
 const Promise = require('bluebird');
 const RegistryClient = require('npm-registry-client');
@@ -72,13 +74,24 @@ const downloadPackage = async (function(pkgName, pkgVersion, registryUrl) {
 //-- Main execution
 
 if (!yargs.argv._ || yargs.argv._.length !== 2) {
-  console.log(`Usage:\n\t${PROGRAM_NAME} [--registry REGISTRY] <PACKAGE> <VERSION>`);
+  console.log(`
+Usage:  ${PROGRAM_NAME} [--registry REGISTRY] [--pattern PATTERN] <PACKAGE> <VERSION>
+
+       * REGISTRY defaults to your default NPM registry (from your npmrc)
+       * PATTERN defaults to '**/*.map'
+`);
   process.exit(1);
 }
 
 const pkgName = yargs.argv._[0];
 const pkgVersion = yargs.argv._[1];
 const registryUrl = yargs.argv.registry || null;
+const mapFilePattern = yargs.argv.pattern || '**/*.map';
+
+const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com/';
+const organizationSlug = yargs.argv.organizationSlug || 'polyconseil';
+const sentryProject = 'foobar';
+const releaseFilesUrl = `${sentryUrl}/api/0/projects/${organizationSlug}/${sentryProject}/releases/${pkgVersion}/files/`;
 
 async (function() {
   const filePath = await (downloadPackage(pkgName, pkgVersion, registryUrl));
@@ -86,10 +99,40 @@ async (function() {
   // Extract everything from the package
   const dirPath = fnAwait(temp.mkdir, PROGRAM_NAME);
   await (targz().extract(filePath, dirPath));
-  console.log(dirPath);
 
-  //
-  // List source maps
-  //
-  // For every file referred to in the source map, publish it to Sentry
+  // List source maps and upload them
+  // XXX(vperron): A slightly better pattern would be to list every JS file, take the last line,
+  // and upload that file as the source map. This requires to read all the (potentially very long)
+  // source javascript/CSS files and read the last line, which is not very efficient.
+  const mapFiles = fnAwait(glob, `${dirPath}/${mapFilePattern}`);
+
+  // Create the release if it doesn't exist
+  // curl http://127.0.0.1:9000/api/0/projects/sentry/foobar/releases/ -H "Authorization: Basic YjliMzA1ODE4NmMwNGI1ZThiMjI4NzJkZjVjMDg0ZDA6" -X POST -d '{"version": "1.2.12"}' -H 'Content-Type: application/json'
+
+  for (const mapFile of mapFiles) {
+    console.log(mapFile);
+    //  curl https://app.getsentry.com/api/0/projects/:organization_slug/:project_slug/releases/2da95dfb052f477380608d59d32b4ab9/files/ \
+    //   -u [api_key]: \
+    //   -X POST \
+    //   -F file=@app.js.map \
+    //   -F name="http://example.com/app.js.map"
+    const reqOptions = {
+      url: releaseFilesUrl,
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic YjliMzA1ODE4NmMwNGI1ZThiMjI4NzJkZjVjMDg0ZDA6',
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const dataStream = fs.createReadStream(mapFile);
+    dataStream.pipe(request(reqOptions, function (err, resp, body) {
+      if (err) {
+        console.log('Error!', err);
+      } else {
+        console.log('URL: ' + body);
+      }
+    }));
+  }
+
 })();
