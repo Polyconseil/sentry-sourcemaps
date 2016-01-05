@@ -15,6 +15,7 @@ const fs = require('fs');
 const glob = require('glob');
 const npm = require('npm');
 const npmlog = require('npmlog');
+const path = require('path');
 const request = require('request');
 const temp = require('temp');
 const Promise = require('bluebird');
@@ -48,6 +49,11 @@ function fnAwait(fn) {  // accepts other arguments
   return await (asyncFn.apply(this, args));
 }
 
+function strippedPathAfter(str, prefix) {
+  const path = str.split(prefix)[1];
+  return path.replace(/^\/|\/$/g, '');
+}
+
 const streamToTempFile = async (function(buffer) {
   const temporaryFile = fnAwait(temp.open, PROGRAM_NAME);
   fs.close(temporaryFile.fd);
@@ -73,25 +79,52 @@ const downloadPackage = async (function(pkgName, pkgVersion, registryUrl) {
 
 //-- Main execution
 
-if (!yargs.argv._ || yargs.argv._.length !== 2) {
+if (!yargs.argv._ || yargs.argv._.length !== 4) {
   console.log(`
-Usage:  ${PROGRAM_NAME} [--registry REGISTRY] [--pattern PATTERN] <PACKAGE> <VERSION>
+Usage:  ${PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKEN>
 
-       * REGISTRY defaults to your default NPM registry (from your npmrc)
-       * PATTERN defaults to '**/*.map'
+  PACKAGE is the NPM package name for your application on the registry.
+  VERSION is the target version of that package.
+  APP_URL is the URL of the deployed application, that is linked with Sentry.
+  ORG_TOKEN is the Sentry API Organization-wide token.
+
+  OPTIONS are to be chosen within:
+
+  Sentry Options
+  ==============
+
+  --sentry-url : the URL to your Sentry server. Defaults to 'https://app.getsentry.com/'
+  --sentry-organization : the organization to which the project belongs. Defaults to 'sentry'
+  --sentry-project : the name under which your project is named within Sentry. Defaults to <PACKAGE>.
+
+  Other Options
+  =============
+
+  --pattern : the MAP files search pattern. Defaults to '**/*.map'
+  --registry : your NPM registry URL, or the default one for your system.
+  --strip-prefix : the prefix to the MAP files in your NPM package, defaults to 'dist'.
+      For instance, if your MAP files look like './built-app/dist/libraries/js/foo.map'
+      and the MAP file itself is hosted at '<APP_URL>/libraries/js/foo.map', then
+      the appropriate prefix would be 'built-app/dist'.
 `);
   process.exit(1);
 }
 
 const pkgName = yargs.argv._[0];
 const pkgVersion = yargs.argv._[1];
+const appUrl = yargs.argv._[2];
+const orgToken = new Buffer(`${yargs.argv._[3]}:`).toString('base64');
+
 const registryUrl = yargs.argv.registry || null;
 const mapFilePattern = yargs.argv.pattern || '**/*.map';
+const stripPrefix = yargs.argv.stripPrefix || 'dist';
 
 const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com/';
-const organizationSlug = yargs.argv.organizationSlug || 'polyconseil';
-const sentryProject = 'foobar';
-const releaseFilesUrl = `${sentryUrl}/api/0/projects/${organizationSlug}/${sentryProject}/releases/${pkgVersion}/files/`;
+const sentryOrganization = yargs.argv.sentryOrganization || 'sentry';
+const sentryProject = yargs.argv.sentryProject || pkgName;
+const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryProject}/releases/`;
+const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`;
+
 
 async (function() {
   const filePath = await (downloadPackage(pkgName, pkgVersion, registryUrl));
@@ -107,32 +140,41 @@ async (function() {
   const mapFiles = fnAwait(glob, `${dirPath}/${mapFilePattern}`);
 
   // Create the release if it doesn't exist
-  // curl http://127.0.0.1:9000/api/0/projects/sentry/foobar/releases/ -H "Authorization: Basic YjliMzA1ODE4NmMwNGI1ZThiMjI4NzJkZjVjMDg0ZDA6" -X POST -d '{"version": "1.2.12"}' -H 'Content-Type: application/json'
+  const response = fnAwait (request, {
+    url: releaseUrl,
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${orgToken}`,
+    },
+    json: true,
+    body: {
+      version: pkgVersion,
+    },
+  });
+  if (response.statusCode != 200) {
+    console.log(`Error when creating release. Sentry replied with: '${response.body.detail}'`);
+  }
 
+  // Upload every map file
   for (const mapFile of mapFiles) {
-    console.log(mapFile);
-    //  curl https://app.getsentry.com/api/0/projects/:organization_slug/:project_slug/releases/2da95dfb052f477380608d59d32b4ab9/files/ \
-    //   -u [api_key]: \
-    //   -X POST \
-    //   -F file=@app.js.map \
-    //   -F name="http://example.com/app.js.map"
-    const reqOptions = {
+    const mapFilePackagePath = strippedPathAfter(mapFile, path.join(dirPath, 'package'));
+    const mapFileStrippedPath = strippedPathAfter(mapFilePackagePath, stripPrefix);
+
+    const response = fnAwait (request, {
       url: releaseFilesUrl,
       method: 'POST',
       headers: {
-        'Authorization': 'Basic YjliMzA1ODE4NmMwNGI1ZThiMjI4NzJkZjVjMDg0ZDA6',
-        'Content-Type': 'application/json',
+        'Authorization': `Basic ${orgToken}`,
       },
-    };
-
-    const dataStream = fs.createReadStream(mapFile);
-    dataStream.pipe(request(reqOptions, function (err, resp, body) {
-      if (err) {
-        console.log('Error!', err);
-      } else {
-        console.log('URL: ' + body);
+      formData: {
+        file: fs.createReadStream(mapFile),
+        name: `${appUrl}/${mapFileStrippedPath}`,
       }
-    }));
+    });
+    if ([200, 409].indexOf(response.statusCode) !== 0) {
+      console.log(`Successfully uploaded '${mapFilePackagePath}'`);
+    } else {
+      console.log(`Error when uploading '${mapFilePackagePath}'. Sentry replied with: '${response.body.detail}'`);
+    }
   }
-
 })();
