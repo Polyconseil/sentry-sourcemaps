@@ -9,7 +9,7 @@ ecmaFeatures:
   modules: true
 rules:
   strict:
-  - 2
+  - 1
   - global
   no-shadow: 2
   no-shadow-restricted-names: 2

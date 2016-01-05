@@ -3,13 +3,13 @@
 
 'use strict';
 
-//-- Program-wide constants
+// -- Program-wide constants
 const PROGRAM_NAME = 'sentry-sourcemaps';
 
 
-//-- Module requires
-const async = require('asyncawait/async');
-const await = require('asyncawait/await');
+// -- Module requires
+const aasync = require('asyncawait/async');
+const aawait = require('asyncawait/await');
 
 const fs = require('fs');
 const glob = require('glob');
@@ -25,9 +25,9 @@ const targz = require('tar.gz');
 const yargs = require('yargs');
 
 
-//-- Type definitions
+// -- Type definitions
 class AsyncSilentNpmClient extends RegistryClient {
-  constructor(config) {
+  constructor(_config) {
     const npmConfig = util._extend(npm.config);
     npmConfig.log = npmlog;
     npmConfig.log.level = 'silent';
@@ -36,25 +36,28 @@ class AsyncSilentNpmClient extends RegistryClient {
 
   getAsync(url, params) {
     return new Promise((resolve, reject) => {
-      this.get(url, params, (_err, _data, _raw, res) => resolve(res))
-    })
+      this.get(url, params, function(_err, _data, _raw, res) {
+        if (_err && _err.code) return reject;
+        return resolve(res);
+      });
+    });
   }
 }
 
 
-//-- Helper functions
+// -- Helper functions
 function fnAwait(fn) {  // accepts other arguments
   const args = Array.prototype.slice.call(arguments, 1);
   const asyncFn = Promise.promisify(fn);
-  return await (asyncFn.apply(this, args));
+  return aawait(asyncFn.apply(this, args));
 }
 
 function strippedPathAfter(str, prefix) {
-  const path = str.split(prefix)[1];
-  return path.replace(/^\/|\/$/g, '');
+  const lastPart = str.split(prefix)[1];
+  return lastPart.replace(/^\/|\/$/g, '');
 }
 
-const streamToTempFile = async (function(buffer) {
+const streamToTempFile = aasync(function(buffer) {
   const temporaryFile = fnAwait(temp.open, PROGRAM_NAME);
   fs.close(temporaryFile.fd);
   const wstream = fs.createWriteStream(temporaryFile.path);
@@ -63,21 +66,21 @@ const streamToTempFile = async (function(buffer) {
   return temporaryFile.path;
 });
 
-const downloadPackage = async (function(pkgName, pkgVersion, registryUrl) {
+const downloadPackage = aasync(function(pkgName, pkgVersion, pRegistryUrl) {
   fnAwait(npm.load, {loaded: false, loglevel: 'silent'});
 
-  registryUrl = registryUrl || npm.config.get('registry');
+  const registryUrl = pRegistryUrl || npm.config.get('registry');
 
   const pkgData = fnAwait(npm.commands.show, [`${pkgName}@${pkgVersion}`], {loglevel: 'silent'});
   const tarballUrl = pkgData[pkgVersion].dist.tarball;
 
   const client = new AsyncSilentNpmClient(npm.config);
-  const npmResponse = await (client.getAsync(tarballUrl, {auth: npm.config.getCredentialsByURI(registryUrl)}));
+  const npmResponse = aawait(client.getAsync(tarballUrl, {auth: npm.config.getCredentialsByURI(registryUrl)}));
   return streamToTempFile(npmResponse.body, PROGRAM_NAME);
 });
 
 
-//-- Main execution
+// -- Main execution
 
 if (!yargs.argv._ || yargs.argv._.length !== 4) {
   console.log(`
@@ -93,7 +96,7 @@ Usage:  ${PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKEN>
   Sentry Options
   ==============
 
-  --sentry-url : the URL to your Sentry server. Defaults to 'https://app.getsentry.com/'
+  --sentry-url : the URL to your Sentry server. Defaults to 'https://app.getsentry.com'
   --sentry-organization : the organization to which the project belongs. Defaults to 'sentry'
   --sentry-project : the name under which your project is named within Sentry. Defaults to <PACKAGE>.
 
@@ -119,19 +122,19 @@ const registryUrl = yargs.argv.registry || null;
 const mapFilePattern = yargs.argv.pattern || '**/*.map';
 const stripPrefix = yargs.argv.stripPrefix || 'dist';
 
-const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com/';
+const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com';
 const sentryOrganization = yargs.argv.sentryOrganization || 'sentry';
 const sentryProject = yargs.argv.sentryProject || pkgName;
 const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryProject}/releases/`;
 const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`;
 
 
-async (function() {
-  const filePath = await (downloadPackage(pkgName, pkgVersion, registryUrl));
+aasync(function() {
+  const filePath = aawait(downloadPackage(pkgName, pkgVersion, registryUrl));
 
   // Extract everything from the package
   const dirPath = fnAwait(temp.mkdir, PROGRAM_NAME);
-  await (targz().extract(filePath, dirPath));
+  aawait(targz().extract(filePath, dirPath));
 
   // List source maps and upload them
   // XXX(vperron): A slightly better pattern would be to list every JS file, take the last line,
@@ -140,7 +143,7 @@ async (function() {
   const mapFiles = fnAwait(glob, `${dirPath}/${mapFilePattern}`);
 
   // Create the release if it doesn't exist
-  const response = fnAwait (request, {
+  const releasePostResponse = fnAwait(request, {
     url: releaseUrl,
     method: 'POST',
     headers: {
@@ -151,8 +154,8 @@ async (function() {
       version: pkgVersion,
     },
   });
-  if (response.statusCode != 200) {
-    console.log(`Error when creating release. Sentry replied with: '${response.body.detail}'`);
+  if (releasePostResponse.statusCode !== 200) {
+    console.log(`Error when creating release. Sentry replied with: '${releasePostResponse.body.detail}'`);
   }
 
   // Upload every map file
@@ -160,7 +163,7 @@ async (function() {
     const mapFilePackagePath = strippedPathAfter(mapFile, path.join(dirPath, 'package'));
     const mapFileStrippedPath = strippedPathAfter(mapFilePackagePath, stripPrefix);
 
-    const response = fnAwait (request, {
+    const response = fnAwait(request, {
       url: releaseFilesUrl,
       method: 'POST',
       headers: {
@@ -169,7 +172,7 @@ async (function() {
       formData: {
         file: fs.createReadStream(mapFile),
         name: `${appUrl}/${mapFileStrippedPath}`,
-      }
+      },
     });
     if ([200, 409].indexOf(response.statusCode) !== 0) {
       console.log(`Successfully uploaded '${mapFilePackagePath}'`);
