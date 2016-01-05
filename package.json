@@ -18,7 +18,8 @@
   "devDependencies": {
     "eslint": "^1.10.1",
     "istanbul": "^0.4.1",
-    "mocha": "^2.3.4"
+    "mocha": "^2.3.4",
+    "nock": "^4.0.0"
   },
   "bin": {
     "sentry-upload": "./dist/cli.js"

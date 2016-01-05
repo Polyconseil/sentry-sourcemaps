@@ -1,90 +1,24 @@
 #!/usr/bin/env node
-/* eslint no-console:0 */
 
 'use strict';
 
-// -- Program-wide constants
-const PROGRAM_NAME = 'sentry-sourcemaps';
+/* eslint no-console:0 */
 
-
-// -- Module requires
 const aasync = require('asyncawait/async');
 const aawait = require('asyncawait/await');
 
-const fs = require('fs');
 const glob = require('glob');
-const npm = require('npm');
-const npmlog = require('npmlog');
-const path = require('path');
 const request = require('request');
 const temp = require('temp');
-const Promise = require('bluebird');
-const RegistryClient = require('npm-registry-client');
-const util = require('util');
 const targz = require('tar.gz');
 const yargs = require('yargs');
 
+const common = require('./common.js');
 
-// -- Type definitions
-class AsyncSilentNpmClient extends RegistryClient {
-  constructor(_config) {
-    const npmConfig = util._extend(npm.config);
-    npmConfig.log = npmlog;
-    npmConfig.log.level = 'silent';
-    super(npmConfig);
-  }
-
-  getAsync(url, params) {
-    return new Promise((resolve, reject) => {
-      this.get(url, params, function(_err, _data, _raw, res) {
-        if (_err && _err.code) return reject;
-        return resolve(res);
-      });
-    });
-  }
-}
-
-
-// -- Helper functions
-function fnAwait(fn) {  // accepts other arguments
-  const args = Array.prototype.slice.call(arguments, 1);
-  const asyncFn = Promise.promisify(fn);
-  return aawait(asyncFn.apply(this, args));
-}
-
-function strippedPathAfter(str, prefix) {
-  const lastPart = str.split(prefix)[1];
-  return lastPart.replace(/^\/|\/$/g, '');
-}
-
-const streamToTempFile = aasync(function(buffer) {
-  const temporaryFile = fnAwait(temp.open, PROGRAM_NAME);
-  fs.close(temporaryFile.fd);
-  const wstream = fs.createWriteStream(temporaryFile.path);
-  wstream.write(buffer);
-  wstream.end();
-  return temporaryFile.path;
-});
-
-const downloadPackage = aasync(function(pkgName, pkgVersion, pRegistryUrl) {
-  fnAwait(npm.load, {loaded: false, loglevel: 'silent'});
-
-  const registryUrl = pRegistryUrl || npm.config.get('registry');
-
-  const pkgData = fnAwait(npm.commands.show, [`${pkgName}@${pkgVersion}`], {loglevel: 'silent'});
-  const tarballUrl = pkgData[pkgVersion].dist.tarball;
-
-  const client = new AsyncSilentNpmClient(npm.config);
-  const npmResponse = aawait(client.getAsync(tarballUrl, {auth: npm.config.getCredentialsByURI(registryUrl)}));
-  return streamToTempFile(npmResponse.body, PROGRAM_NAME);
-});
-
-
-// -- Main execution
 
 if (!yargs.argv._ || yargs.argv._.length !== 4) {
   console.log(`
-Usage:  ${PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKEN>
+Usage:  ${common.PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKEN>
 
   PACKAGE is the NPM package name for your application on the registry.
   VERSION is the target version of that package.
@@ -128,56 +62,41 @@ const sentryProject = yargs.argv.sentryProject || pkgName;
 const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryProject}/releases/`;
 const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`;
 
+if (require.main === module) {
+  aasync(function() {
 
-aasync(function() {
-  const filePath = aawait(downloadPackage(pkgName, pkgVersion, registryUrl));
+    // Download package from NPM and extract it to /tmp
+    const filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl));
 
-  // Extract everything from the package
-  const dirPath = fnAwait(temp.mkdir, PROGRAM_NAME);
-  aawait(targz().extract(filePath, dirPath));
+    // Extract everything from the package
+    const dirPath = common.fnAwait(temp.mkdir, common.PROGRAM_NAME);
+    aawait(targz().extract(filePath, dirPath));
 
-  // List source maps and upload them
-  // XXX(vperron): A slightly better pattern would be to list every JS file, take the last line,
-  // and upload that file as the source map. This requires to read all the (potentially very long)
-  // source javascript/CSS files and read the last line, which is not very efficient.
-  const mapFiles = fnAwait(glob, `${dirPath}/${mapFilePattern}`);
+    // List source maps and upload them
+    // XXX(vperron): A slightly better pattern would be to list every JS file, take the last line,
+    // and upload that file as the source map. This requires to read all the (potentially very long)
+    // source javascript/CSS files and read the last line, which is not very efficient.
+    const mapFiles = common.fnAwait(glob, `${dirPath}/${mapFilePattern}`);
 
-  // Create the release if it doesn't exist
-  const releasePostResponse = fnAwait(request, {
-    url: releaseUrl,
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${orgToken}`,
-    },
-    json: true,
-    body: {
-      version: pkgVersion,
-    },
-  });
-  if (releasePostResponse.statusCode !== 200) {
-    console.log(`Error when creating release. Sentry replied with: '${releasePostResponse.body.detail}'`);
-  }
-
-  // Upload every map file
-  for (const mapFile of mapFiles) {
-    const mapFilePackagePath = strippedPathAfter(mapFile, path.join(dirPath, 'package'));
-    const mapFileStrippedPath = strippedPathAfter(mapFilePackagePath, stripPrefix);
-
-    const response = fnAwait(request, {
-      url: releaseFilesUrl,
+    // Create the release if it doesn't exist
+    const releasePostResponse = common.fnAwait(request, {
+      url: releaseUrl,
       method: 'POST',
       headers: {
         'Authorization': `Basic ${orgToken}`,
       },
-      formData: {
-        file: fs.createReadStream(mapFile),
-        name: `${appUrl}/${mapFileStrippedPath}`,
+      json: true,
+      body: {
+        version: pkgVersion,
       },
     });
-    if ([200, 409].indexOf(response.statusCode) !== 0) {
-      console.log(`Successfully uploaded '${mapFilePackagePath}'`);
-    } else {
-      console.log(`Error when uploading '${mapFilePackagePath}'. Sentry replied with: '${response.body.detail}'`);
+    if (releasePostResponse.statusCode !== 200) {
+      console.log(`Error when creating release. Sentry replied with: '${releasePostResponse.body.detail}'`);
     }
-  }
-})();
+
+    // Upload every map file
+    for (let mapFile of mapFiles) {
+      common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken);
+    }
+  })();
+}
