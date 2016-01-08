@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/Polyconseil/sentry-sourcemaps.svg?branch=master)](https://travis-ci.org/Polyconseil/sentry-sourcemaps)
 [![codecov.io](https://codecov.io/github/Polyconseil/sentry-sourcemaps/coverage.svg?branch=master)](https://codecov.io/github/Polyconseil/sentry-sourcemaps?branch=master)
 
+
 Sentry 8 comes with a brand new [Releases API][release_api] that finally enables us to
 upload JavaScript Source Maps directly to Sentry, and avoid the costly and fragile
 remote fetching of the source maps from our application servers.
