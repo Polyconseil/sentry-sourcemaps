@@ -21,7 +21,8 @@
     "istanbul": "^0.4.1",
     "mocha": "^2.3.4",
     "mock-fs": "^3.6.0",
-    "nock": "^5.2.1"
+    "nock": "^5.2.1",
+    "npm": "^3.5.3"
   },
   "bin": {
     "sentry-sourcemaps": "./src/cli.js"
