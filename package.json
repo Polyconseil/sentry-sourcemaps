@@ -1,6 +1,6 @@
 {
   "name": "sentry-sourcemaps",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Upload your Javascript source maps to Sentry",
   "main": "src/cli.js",
   "repository": {
@@ -10,7 +10,8 @@
   "scripts": {
     "eslint": "eslint src/**/*.js",
     "test": "mocha src/**/*.spec.js",
-    "cover": "istanbul cover --report text  node_modules/mocha/bin/_mocha -- src/**/*.spec.js"
+    "cover": "istanbul cover --report text  node_modules/mocha/bin/_mocha -- src/**/*.spec.js",
+    "codecov": "istanbul cover mocha -- src/**/*.spec.js"
   },
   "keywords": [],
   "author": "Polyconseil",
