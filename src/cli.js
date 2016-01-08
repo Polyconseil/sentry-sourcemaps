@@ -96,7 +96,11 @@ if (require.main === module) {
 
     // Upload every map file
     for (let mapFile of mapFiles) {
-      common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken);
+      try {
+        common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken);
+      } catch(err) {
+        console.log(`Error when uploading '${mapFile}'. Sentry replied with: '${err}'`);
+      }
     }
   })();
 }

@@ -1,13 +1,18 @@
 # sentry-sourcemaps
 
-Sentry 8 comes with a brand new [Releases API][release_api] that finally enables us to
-upload JavaScript Surce Maps directly to Sentry, and avoid the costly and fragile
-remote fetch of the source maps from our application servers.
+[![Build Status](https://travis-ci.org/Polyconseil/sentry-sourcemaps.svg?branch=master)](https://travis-ci.org/Polyconseil/sentry-sourcemaps)
+[![codecov.io](https://codecov.io/github/Polyconseil/sentry-sourcemaps/coverage.svg?branch=master)](https://codecov.io/github/Polyconseil/sentry-sourcemaps?branch=master)
 
-This tool is intended to do just that, upload your application's source maps to
-Sentry along with every release, and does it seamlessly by downloading your application
-package from the NPM registry (even private ones, of course), lloking at the source maps
-within it, and gracefully uploading them to your Sentry instance.
+Sentry 8 comes with a brand new [Releases API][release_api] that finally enables us to
+upload JavaScript Source Maps directly to Sentry, and avoid the costly and fragile
+remote fetching of the source maps from our application servers.
+
+This tool is intended to do just that: upload your application's source maps to
+Sentry along with every release.
+
+It does that seamlessly by downloading your application's package from the NPM
+registry (even private ones, of course), looking at the source maps within it,
+and gracefully uploading them to your Sentry instance.
 
 
 ## How it works
@@ -70,6 +75,12 @@ For instance, if your MAP files look like './built-app/dist/libraries/js/foo.map
 and the MAP file itself is hosted at '<APP_URL>/libraries/js/foo.map', then
 the appropriate prefix would be 'built-app/dist'.
 
+## Contributing
+
+At this stage, any PR is welcome !
+
+Especially, there's room for improvement with our Promisify/Asyncawait approach,
+the rejection clauses of many promises are not clearly validated yet.
 
 ## Contributors
 

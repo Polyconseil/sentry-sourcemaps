@@ -1,8 +1,8 @@
 {
   "name": "sentry-sourcemaps",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Upload your Javascript source maps to Sentry",
-  "main": "dist/index",
+  "main": "src/cli.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/polyconseil/sentry-sourcemaps"
@@ -16,17 +16,18 @@
   "author": "Polyconseil",
   "license": "MIT",
   "devDependencies": {
+    "chai": "^3.4.1",
     "eslint": "^1.10.1",
     "istanbul": "^0.4.1",
     "mocha": "^2.3.4",
-    "nock": "^4.0.0"
+    "mock-fs": "^3.6.0",
+    "nock": "^5.2.1"
   },
   "bin": {
-    "sentry-upload": "./dist/cli.js"
+    "sentry-sourcemaps": "./src/cli.js"
   },
   "files": [
     "src",
-    "dist",
     "package.json",
     "README.md"
   ],

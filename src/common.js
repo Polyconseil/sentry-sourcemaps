@@ -89,9 +89,7 @@ function uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, o
     },
   });
   if ([200, 409].indexOf(response.statusCode) !== 0) {
-    console.log(`Successfully uploaded '${mapFilePackagePath}'`);
-  } else {
-    console.log(`Error when uploading '${mapFilePackagePath}'. Sentry replied with: '${response.body.detail}'`);
+    throw response.body.detail;
   }
 }
 
