@@ -5,7 +5,6 @@ const aawait = require('asyncawait/await');
 
 const chai = require('chai');
 const fs = require('fs');
-const fsmock = require('mock-fs');
 const nock = require('nock');
 
 const common = require('./common.js');
@@ -50,10 +49,12 @@ describe('common', () => {
     const filePath = '/foobar/package/stripMe/some.file.map';
     const appUrl = 'https://fantastic.app/js';
     const pushUrl = 'http://sentry/xxx/release/';
+
+    const fsmock = require('mock-fs');
     fsmock({
       '/foobar/package/stripMe': {
         'some.file.map': 'CONTENT',
-      }
+      },
     });
 
     let savedBody = null;
@@ -62,6 +63,7 @@ describe('common', () => {
       return true;
     }).reply(200, 'OK');
     aawait(common.uploadMapFile(filePath, '/foobar', 'stripMe', pushUrl, appUrl, 'FAKETOKEN'));
+    fsmock.restore();
 
     chai.expect(mockedPost.isDone()).to.equal(true);
     chai.expect(savedBody).to.contain(`${appUrl}/some.file.map`);

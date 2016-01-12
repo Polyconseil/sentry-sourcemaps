@@ -7,11 +7,13 @@
     "type": "git",
     "url": "https://github.com/polyconseil/sentry-sourcemaps"
   },
+  "engines" : {
+    "node" : ">=4.0"
+  },
   "scripts": {
     "eslint": "eslint src/**/*.js",
     "test": "mocha src/**/*.spec.js",
-    "cover": "istanbul cover --report text  node_modules/mocha/bin/_mocha -- src/**/*.spec.js",
-    "codecov": "istanbul cover mocha -- src/**/*.spec.js"
+    "cover": "istanbul cover _mocha -- src/**/*.spec.js"
   },
   "keywords": [],
   "author": "Polyconseil",

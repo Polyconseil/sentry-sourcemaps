@@ -76,6 +76,16 @@ For instance, if your MAP files look like './built-app/dist/libraries/js/foo.map
 and the MAP file itself is hosted at '<APP_URL>/libraries/js/foo.map', then
 the appropriate prefix would be 'built-app/dist'.
 
+## Testing
+
+Run the tests with:
+
+  npm test
+
+Run coverage tests with:
+
+  npm run cover
+
 ## Contributing
 
 At this stage, any PR is welcome !
