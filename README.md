@@ -76,6 +76,11 @@ For instance, if your MAP files look like './built-app/dist/libraries/js/foo.map
 and the MAP file itself is hosted at '<APP_URL>/libraries/js/foo.map', then
 the appropriate prefix would be 'built-app/dist'.
 
+
+## Docker Image
+
+A docker image is available, which enables its use without Node installed.
+
 ## Testing
 
 Run the tests with:
