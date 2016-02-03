@@ -91,15 +91,15 @@ if (require.main === module) {
       },
     });
     if (releasePostResponse.statusCode !== 200) {
-      console.log(`Error when creating release. Sentry replied with: '${releasePostResponse.body.detail}'`);
+      console.log(`[warning] release creation: Sentry replied with: '${releasePostResponse.body.detail}'`);
     }
 
     // Upload every map file
     for (let mapFile of mapFiles) {
       try {
         common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken);
-      } catch(err) {
-        console.log(`Error when uploading '${mapFile}'. Sentry replied with: '${err}'`);
+      } catch (err) {
+        console.log(`[error] uploading '${mapFile}'. Sentry replied with: '${err}'`);
       }
     }
   })();

@@ -88,7 +88,7 @@ function uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, o
       name: `${appUrl}/${mapFileStrippedPath}`,
     },
   });
-  if ([200, 409].indexOf(response.statusCode) !== 0) {
+  if ([200, 201, 409].indexOf(response.statusCode) === -1) {
     throw response.body.detail;
   }
 }
