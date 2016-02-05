@@ -58,7 +58,7 @@ const streamToTempFile = aasync(function(buffer) {
   return temporaryFile.path;
 });
 
-const downloadPackage = aasync(function(pkgName, pkgVersion, pRegistryUrl) {
+const downloadPackage = aasync(function(pkgName, pkgVersion, pRegistryUrl, pRegistryToken) {
 
   if (pRegistryUrl) {
     fnAwait(npm.load, {loaded: false, loglevel: 'silent', registry: pRegistryUrl});
@@ -72,7 +72,11 @@ const downloadPackage = aasync(function(pkgName, pkgVersion, pRegistryUrl) {
   const tarballUrl = pkgData[pkgVersion].dist.tarball;
 
   const client = new AsyncSilentNpmClient(npm.config);
-  const npmResponse = aawait(client.getAsync(tarballUrl, {auth: npm.config.getCredentialsByURI(registryUrl)}));
+  const creds = npm.config.getCredentialsByURI(registryUrl);
+  if (pRegistryToken) {
+    creds.token = pRegistryToken;
+  }
+  const npmResponse = aawait(client.getAsync(tarballUrl, {auth: creds}));
   return streamToTempFile(npmResponse.body, PROGRAM_NAME);
 });
 

@@ -39,6 +39,7 @@ Usage:  ${common.PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKE
 
   --pattern : the MAP files search pattern. Defaults to '**/*.map'
   --registry : your NPM registry URL, or the default one for your system.
+  --registry-token : an optional registry security token, defaults to the one in your npmrc.
   --strip-prefix : the prefix to the MAP files in your NPM package, defaults to 'dist'.
       For instance, if your MAP files look like './built-app/dist/libraries/js/foo.map'
       and the MAP file itself is hosted at '<APP_URL>/libraries/js/foo.map', then
@@ -59,6 +60,7 @@ const stripPrefix = yargs.argv.stripPrefix || 'dist';
 const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com';
 const sentryOrganization = yargs.argv.sentryOrganization || 'sentry';
 const sentryProject = yargs.argv.sentryProject || pkgName;
+const registryToken = yargs.argv.registryToken || null;
 const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryProject}/releases/`;
 const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`;
 
@@ -66,7 +68,7 @@ if (require.main === module) {
   aasync(function() {
 
     // Download package from NPM and extract it to /tmp
-    const filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl));
+    const filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken));
 
     // Extract everything from the package
     const dirPath = common.fnAwait(temp.mkdir, common.PROGRAM_NAME);
