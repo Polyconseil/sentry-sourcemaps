@@ -30,7 +30,10 @@ class AsyncSilentNpmClient extends RegistryClient {
   getAsync(url, params) {
     return new Promise((resolve, reject) => {
       this.get(url, params, function(_err, _data, _raw, res) {
-        if (_err && _err.code) return reject;
+        if (_err && _err.code) {
+          console.log(`[error] NPM replied with: '${_err}'`);
+          return reject;
+        }
         return resolve(res);
       });
     });
@@ -89,7 +92,7 @@ function uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, o
     },
   });
   if ([200, 201, 409].indexOf(response.statusCode) === -1) {
-    throw response.body.detail;
+    throw response;
   }
 }
 

@@ -91,7 +91,9 @@ if (require.main === module) {
       },
     });
     if (releasePostResponse.statusCode !== 200) {
-      console.log(`[warning] release creation: Sentry replied with: '${releasePostResponse.body.detail}'`);
+      const errMessage = releasePostResponse.body.detail || releasePostResponse.body;
+      console.log('[warning] release creation: Sentry replied with ' +
+                  `${releasePostResponse.statusCode}: '${errMessage}'`);
     }
 
     // Upload every map file
@@ -99,7 +101,8 @@ if (require.main === module) {
       try {
         common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken);
       } catch (err) {
-        console.log(`[error] uploading '${mapFile}'. Sentry replied with: '${err}'`);
+        console.log(`[error] uploading '${mapFile}'.\n  Sentry replied with ` +
+                    `${err.statusCode}: '${err.body}'`);
       }
     }
   })();
