@@ -24,8 +24,7 @@
     "istanbul": "^0.4.1",
     "mocha": "^2.3.4",
     "mock-fs": "^3.6.0",
-    "nock": "^5.2.1",
-    "npm": "^3.5.3"
+    "nock": "^5.2.1"
   },
   "bin": {
     "sentry-sourcemaps": "./src/cli.js"
@@ -38,7 +37,6 @@
   "dependencies": {
     "asyncawait": "^1.0.1",
     "bluebird": "^3.0.6",
-    "npm-registry-client": "^7.0.9",
     "request": "^2.67.0",
     "tar.gz": "^1.0.2",
     "temp": "^0.8.3",

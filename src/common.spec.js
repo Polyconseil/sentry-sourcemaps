@@ -1,15 +1,17 @@
-'use strict';
+/* eslint strict:0 */
 
-const aasync = require('asyncawait/async');
-const aawait = require('asyncawait/await');
+'use strict'
 
-const chai = require('chai');
-const fs = require('fs');
-const nock = require('nock');
+const aasync = require('asyncawait/async')
+const aawait = require('asyncawait/await')
 
-const common = require('./common.js');
+const chai = require('chai')
+const fs = require('fs')
+const nock = require('nock')
 
-const fakeRegistry = 'http://foo.bar';
+const common = require('./common.js')
+
+const fakeRegistry = 'http://foo.bar'
 
 describe('common', () => {
   before(function() {
@@ -25,47 +27,43 @@ describe('common', () => {
             },
           },
         },
-      });
+      })
 
     nock(fakeRegistry)
-      .get('/request/-/request-2.67.0.tgz').reply(200, 'HELLOWORLD');
-  });
+      .get('/request/-/request-2.67.0.tgz').reply(200, 'HELLOWORLD')
+  })
 
   it('should export PROGRAM_NAME', () => {
-    chai.expect(common.PROGRAM_NAME).to.equal('sentry-sourcemaps');
-  });
-
-  it('should display a fnAwait function that makes a function asynchronous', aasync( () => {
-    chai.expect(common.fnAwait(fs.readFile, './package.json').toString()).to.contain('sentry-sourcemaps');
-  }));
+    chai.expect(common.PROGRAM_NAME).to.equal('sentry-sourcemaps')
+  })
 
   it('should have a downloadPackage function that downloads from NPM', aasync( () => {
-    const outputFile = aawait(common.downloadPackage('request', '2.67.0', fakeRegistry)).toString();
-    chai.expect(outputFile).to.contain('/tmp/');
-    chai.expect(fs.readFileSync(outputFile).toString()).to.equal('HELLOWORLD');
-  }));
+    const outputFile = aawait(common.downloadPackage('request', '2.67.0', fakeRegistry)).toString()
+    chai.expect(outputFile).to.contain('/tmp/')
+    chai.expect(fs.readFileSync(outputFile).toString()).to.equal('HELLOWORLD')
+  }))
 
   it('should have an uploadMapFile function that uploads to Sentry', aasync( () => {
-    const filePath = '/foobar/package/stripMe/some.file.map';
-    const appUrl = 'https://fantastic.app/js';
-    const pushUrl = 'http://sentry/xxx/release/';
+    const filePath = '/foobar/package/stripMe/some.file.map'
+    const appUrl = 'https://fantastic.app/js'
+    const pushUrl = 'http://sentry/xxx/release/'
 
-    const fsmock = require('mock-fs');
+    const fsmock = require('mock-fs')
     fsmock({
       '/foobar/package/stripMe': {
         'some.file.map': 'CONTENT',
       },
-    });
+    })
 
-    let savedBody = null;
+    let savedBody = null
     const mockedPost = nock('http://sentry').post('/xxx/release/', function(body) {
-      savedBody = body;
-      return true;
-    }).reply(200, 'OK');
-    aawait(common.uploadMapFile(filePath, '/foobar', 'stripMe', pushUrl, appUrl, 'FAKETOKEN'));
-    fsmock.restore();
+      savedBody = body
+      return true
+    }).reply(200, 'OK')
+    aawait(common.uploadMapFile(filePath, '/foobar', 'stripMe', pushUrl, appUrl, 'FAKETOKEN'))
+    fsmock.restore()
 
-    chai.expect(mockedPost.isDone()).to.equal(true);
-    chai.expect(savedBody).to.contain(`${appUrl}/some.file.map`);
-  }));
-});
+    chai.expect(mockedPost.isDone()).to.equal(true)
+    chai.expect(savedBody).to.contain(`${appUrl}/some.file.map`)
+  }))
+})
