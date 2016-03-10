@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Polyconseil/sentry-sourcemaps.svg?branch=master)](https://travis-ci.org/Polyconseil/sentry-sourcemaps)
 [![codecov.io](https://codecov.io/github/Polyconseil/sentry-sourcemaps/coverage.svg?branch=master)](https://codecov.io/github/Polyconseil/sentry-sourcemaps?branch=master)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 
 
 Sentry 8 comes with a brand new [Releases API][release_api] that finally enables us to

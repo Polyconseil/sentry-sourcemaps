@@ -15,19 +15,19 @@ const awaitHelpers = require('./await_helpers.js')
 
 const PROGRAM_NAME = 'sentry-sourcemaps'
 
-function strippedPathAfter(str, prefix) {
+function strippedPathAfter (str, prefix) {
   const lastPart = str.split(prefix)[1]
   return lastPart.replace(/^\/|\/$/g, '')
 }
 
-const streamToTempFile = aasync(function(buffer) {
+const streamToTempFile = aasync(function (buffer) {
   const temporaryFile = awaitHelpers.awaitFn(temp.open, PROGRAM_NAME)
   fs.close(temporaryFile.fd)
   fs.writeFileSync(temporaryFile.path, buffer, 'binary')
   return temporaryFile.path
 })
 
-const downloadPackage = aasync(function(pkgName, pkgVersion, registryUrl, registryToken) {
+const downloadPackage = aasync(function (pkgName, pkgVersion, registryUrl, registryToken) {
   let ans = null
 
   const fullPackageUrl = url.resolve(registryUrl, pkgName)
@@ -39,7 +39,7 @@ const downloadPackage = aasync(function(pkgName, pkgVersion, registryUrl, regist
   return streamToTempFile(ans.data, PROGRAM_NAME)
 })
 
-function uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken) {
+function uploadMapFile (mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken) {
   const mapFilePackagePath = strippedPathAfter(mapFile, path.join(dirPath, 'package'))
   const mapFileStrippedPath = strippedPathAfter(mapFilePackagePath, stripPrefix)
 
@@ -59,7 +59,7 @@ function uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, o
   }
 }
 
-function createSentryRelease(releaseUrl, pkgVersion, orgToken) {
+function createSentryRelease (releaseUrl, pkgVersion, orgToken) {
   return awaitHelpers.awaitRequest({
     url: releaseUrl,
     method: 'POST',

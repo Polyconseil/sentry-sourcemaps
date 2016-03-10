@@ -12,11 +12,11 @@ const awaitHelpers = require('./await_helpers.js')
 
 describe('await_helpers', () => {
 
-  it('awaitFn function should make a regular Node function synchronous', aasync( () => {
+  it('awaitFn function should make a regular Node function synchronous', aasync(() => {
     chai.expect(awaitHelpers.awaitFn(fs.readFile, './package.json').toString()).to.contain('sentry-sourcemaps')
   }))
 
-  it('awaitRequest should make a HTTP request asynchronous', aasync( () => {
+  it('awaitRequest should make a HTTP request asynchronous', aasync(() => {
     nock('http://foo.bar').get('/request').reply(200, 'HELLO')
     const resp = awaitHelpers.awaitRequest({
       url: 'http://foo.bar/request',

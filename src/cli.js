@@ -65,7 +65,7 @@ const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryPr
 const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`
 
 if (require.main === module) {
-  aasync(function() {
+  aasync(function () {
 
     let filePath = null
 

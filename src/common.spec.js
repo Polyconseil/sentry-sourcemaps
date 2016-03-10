@@ -14,7 +14,7 @@ const common = require('./common.js')
 const fakeRegistry = 'http://foo.bar'
 
 describe('common', () => {
-  before(function() {
+  before(function () {
     nock(fakeRegistry)
       .get('/request').reply(200, {
         versions: {
@@ -37,13 +37,13 @@ describe('common', () => {
     chai.expect(common.PROGRAM_NAME).to.equal('sentry-sourcemaps')
   })
 
-  it('should have a downloadPackage function that downloads from NPM', aasync( () => {
+  it('should have a downloadPackage function that downloads from NPM', aasync(() => {
     const outputFile = aawait(common.downloadPackage('request', '2.67.0', fakeRegistry)).toString()
     chai.expect(outputFile).to.contain('/tmp/')
     chai.expect(fs.readFileSync(outputFile).toString()).to.equal('HELLOWORLD')
   }))
 
-  it('should have an uploadMapFile function that uploads to Sentry', aasync( () => {
+  it('should have an uploadMapFile function that uploads to Sentry', aasync(() => {
     const filePath = '/foobar/package/stripMe/some.file.map'
     const appUrl = 'https://fantastic.app/js'
     const pushUrl = 'http://sentry/xxx/release/'
@@ -56,7 +56,7 @@ describe('common', () => {
     })
 
     let savedBody = null
-    const mockedPost = nock('http://sentry').post('/xxx/release/', function(body) {
+    const mockedPost = nock('http://sentry').post('/xxx/release/', function (body) {
       savedBody = body
       return true
     }).reply(200, 'OK')
