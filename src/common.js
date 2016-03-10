@@ -28,30 +28,13 @@ const streamToTempFile = aasync(function(buffer) {
 })
 
 const downloadPackage = aasync(function(pkgName, pkgVersion, registryUrl, registryToken) {
+  let ans = null
 
-  const response = awaitHelpers.awaitFn(request, {
-    url: url.resolve(registryUrl, pkgName),
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${registryToken}`,
-    },
-  })
-  if (response.statusCode !== 200) throw response
+  const fullPackageUrl = url.resolve(registryUrl, pkgName)
+  ans = awaitHelpers.awaitAuthenticatedGet(fullPackageUrl, registryToken)
 
-  const pkgData = JSON.parse(response.body)
-  const tarballUrl = pkgData.versions[pkgVersion].dist.tarball
-
-  // FIXME { response, data } = awaitRequest({
-  const ans = awaitHelpers.awaitRequest({
-    url: tarballUrl,
-    method: 'GET',
-    encoding: 'binary',
-    headers: {
-      'Authorization': `Bearer ${registryToken}`,
-    },
-  })
-
-  if (ans.response.statusCode !== 200) throw ans.response
+  const tarballUrl = JSON.parse(ans.response.body).versions[pkgVersion].dist.tarball
+  ans = awaitHelpers.awaitAuthenticatedGet(tarballUrl, registryToken, 'binary')
 
   return streamToTempFile(ans.data, PROGRAM_NAME)
 })

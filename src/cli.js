@@ -67,29 +67,27 @@ const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`
 if (require.main === module) {
   aasync(function() {
 
-    // Download package from NPM and extract it to /tmp
-    const filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken))
+    let filePath = null
 
-    // Extract everything from the package
+    try {
+      filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken))
+    } catch (exception) {
+      console.log('[error, package download] NPM replied with: ' + exception)
+      process.exit(1)
+    }
+
     const dirPath = awaitHelpers.awaitFn(temp.mkdir, common.PROGRAM_NAME)
     aawait(targz().extract(filePath, dirPath))
 
-    // List source maps and upload them
-    // XXX(vperron): A slightly better pattern would be to list every JS file, take the last line,
-    // and upload that file as the source map. This requires to read all the (potentially very long)
-    // source javascript/CSS files and read the last line, which is not very efficient.
-    const mapFiles = awaitHelpers.awaitFn(glob, `${dirPath}/${mapFilePattern}`)
-
-    // Create the release if it doesn't exist
     const releasePostResponse = common.createSentryRelease(releaseUrl, pkgVersion, orgToken)
     if (releasePostResponse.response.statusCode !== 200) {
       const errMessage = releasePostResponse.response.body.detail || releasePostResponse.response.body
-      console.log('[warning] release creation: Sentry replied with ' +
+      console.log('[warning, release creation] Sentry replied with: ' +
                   `${releasePostResponse.response.statusCode}: '${errMessage}'`)
     }
 
-    // Upload every map file
-    for (let mapFile of mapFiles) {
+    const sourceMaps = awaitHelpers.awaitFn(glob, `${dirPath}/${mapFilePattern}`)
+    for (let mapFile of sourceMaps) {
       try {
         common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken)
       } catch (err) {

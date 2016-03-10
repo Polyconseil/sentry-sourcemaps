@@ -8,7 +8,7 @@
     "url": "https://github.com/polyconseil/sentry-sourcemaps"
   },
   "engines": {
-    "node": ">=4.0"
+    "node": ">=5.8"
   },
   "scripts": {
     "eslint": "eslint src/**/*.js",
@@ -19,12 +19,12 @@
   "author": "Polyconseil",
   "license": "MIT",
   "devDependencies": {
-    "chai": "^3.4.1",
-    "eslint": "^1.10.1",
-    "istanbul": "^0.4.1",
-    "mocha": "^2.3.4",
-    "mock-fs": "^3.6.0",
-    "nock": "^5.2.1"
+    "chai": "^3.5.0",
+    "eslint": "^2.3.0",
+    "istanbul": "^0.4.2",
+    "mocha": "^2.4.5",
+    "mock-fs": "^3.8.0",
+    "nock": "^7.2.2"
   },
   "bin": {
     "sentry-sourcemaps": "./src/cli.js"
@@ -35,11 +35,11 @@
     "README.md"
   ],
   "dependencies": {
-    "asyncawait": "^1.0.1",
-    "bluebird": "^3.0.6",
-    "request": "^2.67.0",
-    "tar.gz": "^1.0.2",
+    "asyncawait": "^1.0.3",
+    "bluebird": "^3.3.4",
+    "request": "^2.69.0",
+    "tar.gz": "^1.0.3",
     "temp": "^0.8.3",
-    "yargs": "^3.31.0"
+    "yargs": "^4.2.0"
   }
 }
