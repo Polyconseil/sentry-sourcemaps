@@ -7,9 +7,9 @@
 const aasync = require('asyncawait/async')
 const aawait = require('asyncawait/await')
 
+const exec = require('child_process').exec
 const glob = require('glob')
 const temp = require('temp')
-const targz = require('tar.gz')
 const yargs = require('yargs')
 
 const awaitHelpers = require('./await_helpers.js')
@@ -77,7 +77,8 @@ if (require.main === module) {
     }
 
     const dirPath = awaitHelpers.awaitFn(temp.mkdir, common.PROGRAM_NAME)
-    aawait(targz().extract(filePath, dirPath))
+    aawait(exec(`tar -xvzf ${filePath} -C ${dirPath}`))
+    console.log(`Package extracted to ${dirPath}`)
 
     const releasePostResponse = common.createSentryRelease(releaseUrl, pkgVersion, orgToken)
     if (releasePostResponse.response.statusCode !== 200) {
@@ -86,10 +87,12 @@ if (require.main === module) {
                   `${releasePostResponse.response.statusCode}: '${errMessage}'`)
     }
 
-    const sourceMaps = awaitHelpers.awaitFn(glob, `${dirPath}/${mapFilePattern}`)
+    const sourceMaps = awaitHelpers.awaitFn(glob, `${dirPath}/package/${mapFilePattern}`)
     for (let mapFile of sourceMaps) {
+      console.log(`Uploading source map ${mapFile}`)
       try {
         common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken)
+        console.log('Upload successful.')
       } catch (err) {
         console.log(`[error] uploading '${mapFile}'.\n  Sentry replied with ` +
                     `${err.statusCode}: '${err.body}'`)
