@@ -1,6 +1,6 @@
 {
   "name": "sentry-sourcemaps",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Upload your Javascript source maps to Sentry",
   "main": "src/cli.js",
   "repository": {
