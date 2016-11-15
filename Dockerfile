@@ -1,4 +1,4 @@
-FROM node:5.5.0
+FROM node:6.9.1-alpine
 
 COPY . /tmp/sentry-sourcemaps
 
