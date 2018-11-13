@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 
-/* eslint no-console:0 strict:0 */
-
 'use strict'
 
-const aasync = require('asyncawait/async')
-const aawait = require('asyncawait/await')
-
 const exec = require('child_process').exec
+const fs = require('fs')
+
 const glob = require('glob')
-const temp = require('temp')
 const yargs = require('yargs')
 
-const awaitHelpers = require('./await_helpers.js')
 const common = require('./common.js')
 
 
@@ -51,7 +46,7 @@ Usage:  ${common.PROGRAM_NAME} [OPTIONS] <PACKAGE> <VERSION> <APP_URL> <ORG_TOKE
 const pkgName = yargs.argv._[0]
 const pkgVersion = yargs.argv._[1]
 const appUrl = yargs.argv._[2]
-const orgToken = new Buffer(`${yargs.argv._[3]}:`).toString('base64')
+const orgToken = yargs.argv._[3]
 
 const registryUrl = yargs.argv.registry || null
 const mapFilePattern = yargs.argv.pattern || '**/*.map'
@@ -61,42 +56,30 @@ const sentryUrl = yargs.argv.sentryUrl || 'https://app.getsentry.com'
 const sentryOrganization = yargs.argv.sentryOrganization || 'sentry'
 const sentryProject = yargs.argv.sentryProject || pkgName
 const registryToken = yargs.argv.registryToken || null
-const releaseUrl = `${sentryUrl}/api/0/projects/${sentryOrganization}/${sentryProject}/releases/`
+const releaseUrl = `${sentryUrl}/api/0/organizations/${sentryOrganization}/releases/`
 const releaseFilesUrl = `${releaseUrl}${pkgVersion}/files/`
 
-if (require.main === module) {
-  aasync(function () {
+async function main () {
 
-    let filePath = null
+  const dirPath = fs.mkdtempSync(common.PROGRAM_NAME)
 
-    try {
-      filePath = aawait(common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken))
-    } catch (exception) {
-      console.log('[error, package download] NPM replied with: ' + exception)
-      process.exit(1)
-    }
+  try {
+    var filePath = await common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken)
+  } catch (exception) {
+    console.log('[ERROR] package download: NPM replied with: ' + exception)
+    process.exit(1)
+  }
 
-    const dirPath = awaitHelpers.awaitFn(temp.mkdir, common.PROGRAM_NAME)
-    aawait(exec(`tar -xvzf ${filePath} -C ${dirPath}`))
-    console.log(`Package extracted to ${dirPath}`)
+  await exec(`tar -xvzf ${filePath} -C ${dirPath}`)
+  console.log(`package extracted to dirname=${dirPath}`)
 
-    const releasePostResponse = common.createSentryRelease(releaseUrl, pkgVersion, orgToken)
-    if (releasePostResponse.response.statusCode !== 200) {
-      const errMessage = releasePostResponse.response.body.detail || releasePostResponse.response.body
-      console.log('[warning, release creation] Sentry replied with: ' +
-                  `${releasePostResponse.response.statusCode}: '${errMessage}'`)
-    }
+  await common.createSentryRelease(releaseUrl, sentryProject, pkgVersion, orgToken)
 
-    const sourceMaps = awaitHelpers.awaitFn(glob, `${dirPath}/package/${mapFilePattern}`)
-    for (let mapFile of sourceMaps) {
-      console.log(`Uploading source map ${mapFile}`)
-      try {
-        common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken)
-        console.log('Upload successful.')
-      } catch (err) {
-        console.log(`[error] uploading '${mapFile}'.\n  Sentry replied with ` +
-                    `${err.statusCode}: '${err.body}'`)
-      }
-    }
-  })()
+  const sourceMaps = glob.sync(`${dirPath}/package/${mapFilePattern}`)
+  for (let mapFile of sourceMaps) {
+    console.log(`uploading source map='${mapFile}'`)
+    await common.uploadMapFile(mapFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken)
+  }
 }
+
+main()
