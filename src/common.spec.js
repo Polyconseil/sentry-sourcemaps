@@ -1,9 +1,7 @@
+/* global before, describe */
 /* eslint strict:0 */
 
 'use strict'
-
-const aasync = require('asyncawait/async')
-const aawait = require('asyncawait/await')
 
 const chai = require('chai')
 const fs = require('fs')
@@ -37,13 +35,13 @@ describe('common', () => {
     chai.expect(common.PROGRAM_NAME).to.equal('sentry-sourcemaps')
   })
 
-  it('should have a downloadPackage function that downloads from NPM', aasync(() => {
-    const outputFile = aawait(common.downloadPackage('request', '2.67.0', fakeRegistry)).toString()
-    chai.expect(outputFile).to.contain('/tmp/')
-    chai.expect(fs.readFileSync(outputFile).toString()).to.equal('HELLOWORLD')
-  }))
+  it('should have a downloadPackage function that downloads from NPM', async function () {
+    const outputFile = await common.downloadPackage('request', '2.67.0', fakeRegistry)
+    chai.expect(outputFile.toString()).to.contain('/tmp/')
+    chai.expect(fs.readFileSync(outputFile.toString()).toString()).to.equal('HELLOWORLD')
+  })
 
-  it('should have an uploadMapFile function that uploads to Sentry', aasync(() => {
+  it('should have an uploadMapFile function that uploads to Sentry', async function () {
     const filePath = '/foobar/package/stripMe/some.file.map'
     const appUrl = 'https://fantastic.app/js'
     const pushUrl = 'http://sentry/xxx/release/'
@@ -60,10 +58,10 @@ describe('common', () => {
       savedBody = body
       return true
     }).reply(200, 'OK')
-    aawait(common.uploadMapFile(filePath, '/foobar', 'stripMe', pushUrl, appUrl, 'FAKETOKEN'))
+    await common.uploadMapFile(filePath, '/foobar', 'stripMe', pushUrl, appUrl, 'FAKETOKEN')
     fsmock.restore()
 
     chai.expect(mockedPost.isDone()).to.equal(true)
     chai.expect(savedBody).to.contain(`${appUrl}/some.file.map`)
-  }))
+  })
 })

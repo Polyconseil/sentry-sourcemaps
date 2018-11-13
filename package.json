@@ -38,8 +38,6 @@
     "README.md"
   ],
   "dependencies": {
-    "asyncawait": "^1.0.7",
-    "bluebird": "^3.5.3",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-node": "^8.0.0",
     "glob": "^7.1.3",

@@ -67,9 +67,9 @@ async function uploadMapFile (mapFile, dirPath, stripPrefix, releaseFilesUrl, ap
     })
   } catch (exc) {
     if (exc.statusCode === 409) {
-      console.log("file already uploaded, continuing.")
+      console.log('file already uploaded, continuing.')
     } else {
-      console.log("could not upload the file:", exc)
+      console.log('could not upload the file:', exc)
       process.exit(1)
     }
   }
