@@ -63,12 +63,7 @@ async function main () {
 
   const dirPath = fs.mkdtempSync(common.PROGRAM_NAME)
 
-  try {
-    var filePath = await common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken)
-  } catch (exception) {
-    console.log('[ERROR] package download: NPM replied with: ' + exception)
-    process.exit(1)
-  }
+  const filePath = await common.downloadPackage(pkgName, pkgVersion, registryUrl, registryToken)
 
   await exec(`tar -xvzf ${filePath} -C ${dirPath}`)
   console.log(`package extracted to dirname=${dirPath}`)

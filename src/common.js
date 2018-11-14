@@ -31,7 +31,6 @@ async function authGet (url, token, encoding) {
 
 async function streamToTempFile (buffer) {
   const temporaryFile = temp.openSync(PROGRAM_NAME)
-  fs.close(temporaryFile.fd)
   fs.writeFileSync(temporaryFile.path, buffer, 'binary')
   return temporaryFile.path
 }
