@@ -49,6 +49,7 @@ const appUrl = yargs.argv._[2]
 const orgToken = yargs.argv._[3]
 
 const registryUrl = yargs.argv.registry || null
+const jsFilePattern = yargs.argv.pattern || '**/*.js'
 const mapFilePattern = yargs.argv.pattern || '**/*.map'
 const stripPrefix = yargs.argv.stripPrefix || 'dist'
 
@@ -69,6 +70,12 @@ async function main () {
   console.log(`package extracted to dirname=${dirPath}`)
 
   await common.createSentryRelease(releaseUrl, sentryProject, pkgVersion, orgToken)
+
+  const sourceFiles = glob.sync(`${dirPath}/package/${jsFilePattern}`)
+  for (let jsFile of sourceFiles) {
+    console.log(`uploading source file='${jsFile}'`)
+    await common.uploadMapFile(jsFile, dirPath, stripPrefix, releaseFilesUrl, appUrl, orgToken)
+  }
 
   const sourceMaps = glob.sync(`${dirPath}/package/${mapFilePattern}`)
   for (let mapFile of sourceMaps) {

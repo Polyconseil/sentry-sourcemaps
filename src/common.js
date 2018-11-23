@@ -12,7 +12,8 @@ const PROGRAM_NAME = 'sentry-sourcemaps'
 
 function strippedPathAfter (str, prefix) {
   const lastPart = str.split(prefix)[1]
-  return lastPart.replace(/^\/|\/$/g, '')
+  if (lastPart) return lastPart.replace(/^\/|\/$/g, '')
+  return str
 }
 
 
